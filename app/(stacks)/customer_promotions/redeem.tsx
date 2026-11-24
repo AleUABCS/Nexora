@@ -3,14 +3,18 @@ import appFirebase from "@/credentials";
 import { router, useLocalSearchParams } from "expo-router";
 import { getAuth } from "firebase/auth";
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
   getFirestore,
+  query,
   serverTimestamp,
   setDoc,
   Timestamp,
+  where,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -20,6 +24,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 
 const auth = getAuth(appFirebase);
 const db = getFirestore(appFirebase);
@@ -33,35 +38,74 @@ export default function RedeemView() {
   const promotionId = promotion_id as string;
   const businessId = business_id as string;
 
-  const generateValidationCode = async (userId: string, promoId: string, busId: string) => {
-    const generatedCode = String(Math.floor(1000 + Math.random() * 9000));
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+  const initialized = useRef(false);
 
-    await setDoc(doc(db, "validationCodes", generatedCode), {
-      code: generatedCode,
-      user_id: userId,
-      promotion_id: promoId,
-      business_id: busId,
-      createdAt: serverTimestamp(),
-      expiresAt: Timestamp.fromDate(expiresAt),
-      used: false,
-    });
+// Busca un código del usuario para esta promoción que no esté usado ni vencido
+const findActiveCode = async (userId: string, promoId: string) => {
+  const q = query(
+    collection(db, "validationCodes"),
+    where("user_id", "==", userId),
+    where("promotion_id", "==", promoId),
+  );
+  const snap = await getDocs(q);
+  const now = Date.now();
 
-    return generatedCode;
-  };
+  const active = snap.docs
+    .map((d) => d.data())
+    .find((d) => d.used === false && d.expiresAt.toDate().getTime() > now);
+
+  return active ? (active.code as string) : null;
+};
+
+const generateValidationCode = async (userId: string, promoId: string, busId: string) => {
+  // Evita que un código aleatorio repetido sobrescriba el de otro usuario
+  let generatedCode = "";
+  do {
+    generatedCode = String(Math.floor(1000 + Math.random() * 9000));
+  } while ((await getDoc(doc(db, "validationCodes", generatedCode))).exists());
+
+  const expiresAt = new Date();
+  expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+  await setDoc(doc(db, "validationCodes", generatedCode), {
+    code: generatedCode,
+    user_id: userId,
+    promotion_id: promoId,
+    business_id: busId,
+    createdAt: serverTimestamp(),
+    expiresAt: Timestamp.fromDate(expiresAt),
+    used: false,
+  });
+
+  return generatedCode;
+};
+
+const getOrCreateCode = async (userId: string, promoId: string, busId: string) => {
+  const existing = await findActiveCode(userId, promoId);
+  if (existing) return existing;
+  return generateValidationCode(userId, promoId, busId);
+};
 
   useEffect(() => {
-    const init = async () => {
-      const uid = auth.currentUser?.uid;
-      if (uid && promotionId && businessId) {
-        const generatedCode = await generateValidationCode(uid, promotionId, businessId);
-        setCode(generatedCode);
-        setLoadingCode(false);
-      }
-    };
-    init();
-  }, []);
+  if (initialized.current) return;
+
+  const init = async () => {
+    const uid = auth.currentUser?.uid;
+    if (!uid || !promotionId || !businessId) {
+      setLoadingCode(false);
+      return;
+    }
+    initialized.current = true;
+    try {
+      setCode(await getOrCreateCode(uid, promotionId, businessId));
+    } catch (error) {
+      Alert.alert("Error", "No se pudo obtener el código. Intenta de nuevo.");
+    } finally {
+      setLoadingCode(false);
+    }
+  };
+  init();
+}, []);
 
   useEffect(() => {
     if (!code) return;

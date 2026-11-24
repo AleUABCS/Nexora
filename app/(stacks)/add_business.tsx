@@ -1,16 +1,17 @@
-import { colors, globalStyles } from "@/constants/global_styles";
+import { colors } from "@/constants/global_styles";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { addDoc, collection, getFirestore } from "firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Dimensions,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -54,6 +55,8 @@ export default function AddBusinessScreen() {
   const [uploading, setUploading] = useState(false);
   const [selectedValue, setSelectedValue] =
     useState<ISelectItem<string> | null>(null);
+
+  
 
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -147,6 +150,33 @@ export default function AddBusinessScreen() {
       emailRegex.test(email.trim()) &&
       selectedValue !== null
     );
+  };
+
+  const [mapVisible, setMapVisible] = useState(false);
+  const [tempLocation, setTempLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  const openMap = () => {
+    setTempLocation(selectedLocation);
+    setMapVisible(true);
+  };
+
+  const confirmLocation = () => {
+    if (!tempLocation) {
+      Alert.alert("Aviso", "Toca el mapa para elegir la ubicación del negocio.");
+      return;
+    }
+    setSelectedLocation(tempLocation);
+    setMapVisible(false);
+  };
+
+  const mapRegion = {
+    latitude: selectedLocation?.latitude ?? userLocation?.latitude ?? 24.1426,
+    longitude: selectedLocation?.longitude ?? userLocation?.longitude ?? -110.3128,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
   };
 
   return (
@@ -260,22 +290,28 @@ export default function AddBusinessScreen() {
 
             <View style={styles.locationContainer}>
               <Text style={styles.label}>Ubicación</Text>
-              <MapView
-                style={{ width: width * 0.8, height: width * 0.4 }}
-                initialRegion={{
-                  latitude: userLocation?.latitude ?? 24.1426,
-                  longitude: userLocation?.longitude ?? -110.3128,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }}
-                onPress={(e) => setSelectedLocation(e.nativeEvent.coordinate)}
-              >
-                {selectedLocation && <Marker coordinate={selectedLocation} />}
-              </MapView>
+              <TouchableOpacity activeOpacity={0.8} onPress={openMap}>
+                <View pointerEvents="none">
+                  <MapView
+                    style={{ width: width * 0.8, height: width * 0.4, borderRadius: 12 }}
+                    region={mapRegion}
+                    scrollEnabled={false}
+                    zoomEnabled={false}
+                    rotateEnabled={false}
+                    pitchEnabled={false}
+                  >
+                    {selectedLocation && <Marker coordinate={selectedLocation} />}
+                  </MapView>
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.mapHint}>
+                {selectedLocation
+                  ? "Toca el mapa para cambiar la ubicación"
+                  : "Toca el mapa para elegir la ubicación"}
+              </Text>
             </View>
-
             <TouchableOpacity
-              style={styles.button}
+              style={styles.buttonWarn}
               onPress={handleRegisterBusiness}
               disabled={uploading}
             >
@@ -286,11 +322,63 @@ export default function AddBusinessScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <Modal
+      visible={mapVisible}
+      animationType="slide"
+      onRequestClose={() => setMapVisible(false)}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+        <MapView
+          style={{ flex: 1 }}
+          initialRegion={mapRegion}
+          showsUserLocation={!!userLocation}
+          onPress={(e) => setTempLocation(e.nativeEvent.coordinate)}
+        >
+          {tempLocation && <Marker coordinate={tempLocation} />}
+        </MapView>
+
+        <View style={styles.mapFooter}>
+          <Text style={styles.mapFooterText}>
+            {tempLocation
+              ? "Ubicación seleccionada. Confirma para guardarla."
+              : "Toca el mapa para colocar el negocio."}
+          </Text>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <TouchableOpacity
+              style={[styles.mapButton, { backgroundColor: "#C0392B" }]}
+              onPress={() => setMapVisible(false)}
+            >
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.mapButton, { backgroundColor: "#2E9E5B" }]}
+              onPress={confirmLocation}
+            >
+              <Text style={styles.buttonText}>Confirmar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  mapHint: { fontSize: 12, color: "#969696", marginTop: 6 },
+  mapFooter: {
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E5E5",
+  },
+  mapFooterText: { fontSize: 14, color: "#333", marginBottom: 12, textAlign: "center" },
+  mapButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
   mainContainer: { flex: 1, backgroundColor: "#FFFFFF" },
   headerContainer: { alignItems: "center", marginBottom: 20 },
   titleText: { fontSize: 32, fontWeight: "500" },
@@ -314,6 +402,13 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
+  },
+  buttonWarn: {
+        backgroundColor: colors.warn,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+
   },
   buttonText: { color: "#FFFFFF", fontWeight: "bold" },
   setImageContainer: {

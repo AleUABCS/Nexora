@@ -1,18 +1,17 @@
 import { colors } from "@/constants/global_styles";
 import appFirebase from "@/credentials.js";
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   addDoc,
   collection,
   getDocs,
-  updateDoc,
   getFirestore,
   query,
   serverTimestamp,
-  where,
+  where
 } from "firebase/firestore";
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -153,7 +152,7 @@ export default function HomeView() {
             >
               <View style={styles.businessCard}>
                 <Image
-                  source={{ uri: item.imagenes?.[0] || "https://via.placeholder.com/130" }}
+                  source={require('../../assets/images/placeholder-image.jpg')}
                   style={styles.businessImage}
                 />
                 <View style={{ flex: 1 }}>

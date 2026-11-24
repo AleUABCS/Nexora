@@ -1,7 +1,7 @@
 import { StyleSheet } from "react-native"
 export const colors = {
     placeHolder: "#A1A1A1",
-    warn: "#ff4000",
+    warn: "#ffae00",
     mainBlue: "#0056D2",
     regularText: "#656565",
     secondaryBlue: "#E7EEFF",

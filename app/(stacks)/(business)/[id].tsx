@@ -13,7 +13,6 @@ import {
   Timestamp,
   where,
 } from "firebase/firestore";
-import * as React from "react";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -192,7 +191,7 @@ export default function BusinessView() {
             keyExtractor={(item, index) => index.toString()}
             ListEmptyComponent={
               <View style={{ width: containerWidth, alignItems: "center", padding: 20 }}>
-                <Text style={{ color: colors.placeHolder }}>No hay imágenes disponibles</Text>
+                <Image source={require('../../../assets/images/placeholder-image.jpg')}/>
               </View>
             }
             renderItem={({ item }) => (
@@ -207,7 +206,7 @@ export default function BusinessView() {
 
         <View style={{ ...globalStyles.secondContainer, marginTop: 0 }}>
           <View style={{ ...styles.infoContainer, marginHorizontal: 0 }}>
-            <View style={{ width: "60%" }}>
+            <View style={{ width: "80%" }}>
               <Text style={styles.name}>{businessData.nombreNegocio}</Text>
               <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
                 <View style={{ flexDirection: "row", marginTop: 20 }}>
@@ -383,7 +382,7 @@ const styles = StyleSheet.create({
     margin: 0,
     marginBottom: 10,
   },
-  name: { fontSize: 26, color: "#000000", fontWeight: "bold" },
+  name: { fontSize: 26, color: "#000000", fontWeight: "bold", width: '' },
   infoContainer: { flexDirection: "row" },
   button: {
     backgroundColor: colors.secondaryBlue,
