@@ -423,7 +423,7 @@ export default function EditBusinessScreen() {
                   {selectedLocation && <Marker coordinate={selectedLocation} />}
                 </MapView>
                 <TouchableOpacity
-                  style={{ ...styles.iconButton, backgroundColor: colors.warn }}
+                  style={{ ...styles.iconButton, backgroundColor: colors.delete }}
                   onPress={() => setSelectedLocation(null)}
                 >
                   <Ionicons
@@ -432,7 +432,7 @@ export default function EditBusinessScreen() {
                     color="#ffffff"
                     style={{ marginRight: 10 }}
                   />
-                  <Text style={{ ...styles.buttonText, fontSize: 14 }}>
+                  <Text style={{ ...styles.buttonText, fontSize: 14}}>
                     Eliminar
                   </Text>
                 </TouchableOpacity>
@@ -440,7 +440,10 @@ export default function EditBusinessScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.button}
+              style={{
+                ...styles.button,
+                backgroundColor: colors.warn
+              }}
               onPress={handleUpdateBusiness}
             >
               <Text style={styles.buttonText}>Guardar cambios</Text>
@@ -450,7 +453,7 @@ export default function EditBusinessScreen() {
               style={{
                 ...styles.button,
                 marginTop: 10,
-                backgroundColor: colors.warn,
+                backgroundColor: colors.delete,
               }}
               onPress={handleDeleteBusiness}
             >

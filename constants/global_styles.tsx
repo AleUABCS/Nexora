@@ -8,6 +8,7 @@ export const colors = {
     promotion: "#3900BF",
     promotionText: "#2A008C",
     disabled: '#CCCCCC',
+    delete: '#c61d1d',
 }
 
 export const iconStyles = {
